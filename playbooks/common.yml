@@ -1,0 +1,81 @@
+---
+- name: update web, nfs and db servers
+  hosts: webservers, nfs, db
+  become: yes
+  tasks:
+    - name: detect package manager
+      setup:
+      tags: always
+
+    - name: ensure wireshark is at the latest version (yum)
+      yum:
+        name: wireshark
+        state: latest
+      when: ansible_pkg_mgr == "yum"
+
+    - name: ensure wireshark is at the latest version (apt)
+      apt:
+        name: wireshark
+        state: latest
+      when: ansible_pkg_mgr == "apt"
+
+    - name: create a custom directory
+      file:
+        path: /opt/mydirectory
+        state: directory
+        mode: '0755'
+
+    - name: create a file in the custom directory
+      copy:
+        content: "This file was created by Ansible\n"
+        dest: /opt/mydirectory/ansible-created-file.txt
+        mode: '0644'
+
+    - name: set timezone to UTC
+      timezone:
+        name: UTC
+
+    - name: display current date and time
+      shell: date
+      register: date_output
+
+    - name: show date output
+      debug:
+        var: date_output.stdout
+
+- name: update LB server
+  hosts: lb
+  become: yes
+  tasks:
+    - name: Update apt repo
+      apt: 
+        update_cache: yes
+
+    - name: ensure wireshark is at the latest version
+      apt:
+        name: wireshark
+        state: latest
+
+    - name: create a custom directory
+      file:
+        path: /opt/mydirectory
+        state: directory
+        mode: '0755'
+
+    - name: create a file in the custom directory
+      copy:
+        content: "This file was created by Ansible on LB server\n"
+        dest: /opt/mydirectory/ansible-created-file.txt
+        mode: '0644'
+
+    - name: set timezone to UTC
+      timezone:
+        name: UTC
+
+    - name: display current date and time
+      shell: date
+      register: date_output
+
+    - name: show date output
+      debug:
+        var: date_output.stdout
