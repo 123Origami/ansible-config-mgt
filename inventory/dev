@@ -1,0 +1,16 @@
+[nfs]
+172.31.28.178 ansible_ssh_user=ec2-user
+
+[webservers]
+172.31.42.57 ansible_ssh_user=ec2-user
+172.31.36.78 ansible_ssh_user=ec2-user
+
+[db]
+172.31.40.177 ansible_ssh_user=ec2-user
+
+[lb]
+172.31.22.195 ansible_ssh_user=ubuntu
+
+[all:vars]
+ansible_python_interpreter=/usr/bin/python3
+timezone=UTC
