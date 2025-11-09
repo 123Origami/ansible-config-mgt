@@ -3,10 +3,21 @@
   hosts: webservers, nfs, db
   become: yes
   tasks:
-    - name: ensure wireshark is at the latest version
+    - name: detect package manager
+      setup:
+      tags: always
+
+    - name: ensure wireshark is at the latest version (yum)
       yum:
         name: wireshark
         state: latest
+      when: ansible_pkg_mgr == "yum"
+
+    - name: ensure wireshark is at the latest version (apt)
+      apt:
+        name: wireshark
+        state: latest
+      when: ansible_pkg_mgr == "apt"
 
     - name: create a custom directory
       file:
