@@ -1,3 +1,29 @@
 ---
-- hosts: all
-- import_playbook: ../static-assignments/common-del.yml
+- name: Load environment variables
+  hosts: all
+  tasks:
+    - name: Include environment specific variables
+      include_vars: 
+        file: "{{ playbook_dir }}/../env-vars/{{ inventory_file | basename }}.yml"
+      when: inventory_file is defined
+
+- name: Apply common configuration to all servers
+  hosts: all
+  tasks:
+    - import_playbook: ../static-assignments/common.yml
+
+- name: Configure UAT webservers
+  hosts: uat-webservers
+  tasks:
+    - import_playbook: ../static-assignments/uat-webservers.yml
+
+- name: Configure general webservers
+  hosts: webservers
+  tasks:
+    - import_playbook: ../static-assignments/webservers.yml
+
+- name: Configure load balancers
+  hosts: lb
+  tasks:
+    - import_playbook: ../static-assignments/loadbalancers.yml
+  when: load_balancer_is_required | default(false)
