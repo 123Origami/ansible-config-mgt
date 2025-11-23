@@ -4,3 +4,5 @@
   roles:
     - role: nginx
       when: enable_nginx_lb and load_balancer_is_required
+    - role: apache_lb
+      when: enable_apache_lb and load_balancer_is_required

@@ -21,3 +21,4 @@ nginx_upstream_servers:
   - "web1-uat:80"
   - "web2-uat:80"
 
+
