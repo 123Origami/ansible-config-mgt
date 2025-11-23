@@ -1,0 +1,29 @@
+---
+- name: Common configuration for all servers
+  hosts: all
+  tasks:
+    - name: Update apt package cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install common packages
+      apt:
+        name:
+          - curl
+          - wget
+          - vim
+          - htop
+          - tree
+        state: present
+
+    - name: Set timezone to UTC
+      timezone:
+        name: UTC
+
+    - name: Ensure MOTD is configured
+      copy:
+        content: |
+          Welcome to {{ inventory_hostname }}
+          Environment: {{ env_name | default('unknown') }}
+        dest: /etc/motd

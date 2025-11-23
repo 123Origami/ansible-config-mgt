@@ -1,0 +1,6 @@
+---
+enable_nginx_lb: false
+load_balancer_is_required: false
+nginx_upstream_servers:
+  - "web1:80"
+  - "web2:80"

@@ -1,0 +1,31 @@
+---
+- name: UAT specific web server configuration
+  hosts: uat_webservers
+  tasks:
+    - name: Create web directory
+      file:
+        path: /var/www/html
+        state: directory
+        owner: www-data
+        group: www-data
+        mode: '0755'
+
+    - name: Deploy UAT index page
+      copy:
+        content: |
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <title>UAT Environment - Tooling Application</title>
+          </head>
+          <body>
+              <h1>UAT Environment - Tooling Application</h1>
+              <p>Server: {{ ansible_hostname }}</p>
+              <p>Environment: UAT</p>
+              <p>Database: tooling</p>
+          </body>
+          </html>
+        dest: /var/www/html/index.html
+        owner: www-data
+        group: www-data
+        mode: '0644'
