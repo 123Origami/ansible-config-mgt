@@ -1,0 +1,29 @@
+---
+- name: Install Docker
+  apt:
+    name: docker.io
+    state: present
+
+- name: Start Docker service
+  systemd:
+    name: docker
+    state: started
+    enabled: yes
+
+- name: Pull Artifactory image
+  docker_image:
+    name: docker.bintray.io/jfrog/artifactory-oss
+    tag: latest
+    source: pull
+
+- name: Run Artifactory container
+  docker_container:
+    name: artifactory
+    image: docker.bintray.io/jfrog/artifactory-oss:latest
+    state: started
+    restart_policy: always
+    ports:
+      - "8081:8081"
+      - "8082:8082"
+    volumes:
+      - artifactory_data:/var/opt/jfrog/artifactory

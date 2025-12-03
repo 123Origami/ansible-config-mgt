@@ -1,0 +1,47 @@
+---
+- name: Install Java
+  apt:
+    name: openjdk-11-jdk
+    state: present
+
+- name: Install PostgreSQL
+  apt:
+    name: postgresql
+    state: present
+
+- name: Configure PostgreSQL for SonarQube
+  become_user: postgres
+  postgresql_user:
+    name: sonar
+    password: sonar
+    state: present
+
+- name: Create SonarQube database
+  become_user: postgres
+  postgresql_db:
+    name: sonarqube
+    owner: sonar
+    state: present
+
+- name: Download SonarQube
+  get_url:
+    url: https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-7.9.3.zip
+    dest: /tmp/sonarqube-7.9.3.zip
+
+- name: Extract SonarQube
+  unarchive:
+    src: /tmp/sonarqube-7.9.3.zip
+    dest: /opt
+    remote_src: yes
+
+- name: Create SonarQube service file
+  template:
+    src: sonarqube.service.j2
+    dest: /etc/systemd/system/sonarqube.service
+  notify: reload systemd
+
+- name: Start SonarQube service
+  systemd:
+    name: sonarqube
+    state: started
+    enabled: yes
