@@ -1,0 +1,30 @@
+---
+- name: Deploy CI Environment
+  hosts: jenkins,sonarqube,artifact_repository
+  become: yes
+  gather_facts: yes
+
+  tasks:
+    - name: Ensure CI tools are installed
+      debug:
+        msg: "Deploying to {{ inventory_hostname }}"
+
+- name: Deploy Development Environment
+  hosts: tooling,todo,nginx,db
+  become: yes
+  gather_facts: yes
+
+  tasks:
+    - name: Ensure packages are installed
+      debug:
+        msg: "Deploying {{ inventory_hostname }} in dev environment"
+
+- name: Deploy Pentest Environment
+  hosts: pentest-todo,pentest-tooling
+  become: yes
+  gather_facts: yes
+
+  tasks:
+    - name: Setup pentest tools
+      debug:
+        msg: "Setting up pentest environment on {{ inventory_hostname }}"

@@ -1,0 +1,37 @@
+pipeline {
+    agent any
+
+    parameters {
+      string(name: 'inventory', defaultValue: 'dev',  description: 'This is the inventory file for the environment to deploy configuration')
+    }
+
+    stages {
+        stage('Test') {
+            steps {
+                echo "Testing pipeline with inventory: ${params.inventory}"
+                sh '''
+                echo "Current directory: $(pwd)"
+                echo "Listing files:"
+                ls -la
+                echo "Inventory parameter: ${inventory}"
+                '''
+            }
+        }
+
+        stage('Check Inventory') {
+            steps {
+                sh '''
+                echo "Checking inventory file: ${inventory}"
+                if [ -f "${WORKSPACE}/${inventory}" ]; then
+                    echo "Inventory file exists:"
+                    cat "${WORKSPACE}/${inventory}"
+                else
+                    echo "ERROR: Inventory file ${inventory} not found!"
+                    echo "Available inventory files:"
+                    ls -la *.inv* 2>/dev/null || ls -la
+                fi
+                '''
+            }
+        }
+    }
+}
