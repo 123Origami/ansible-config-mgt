@@ -4,8 +4,13 @@ pipeline {
     parameters {
         choice(
             name: 'inventory',
+<<<<<<< HEAD
             choices: ['local-test', 'dev', 'sit', 'uat', 'pentest', 'pre-prod', 'prod'],
             description: 'Select inventory file'
+=======
+            defaultValue: 'dev',
+            description: 'This is the inventory file for the environment to deploy configuration'
+>>>>>>> 5dda3d63fd3631086b13a9716a47d0d322c1ab5b
         )
         choice(
             name: 'tags',
@@ -35,11 +40,14 @@ pipeline {
         stage('Setup Environment') {
             steps {
                 script {
+<<<<<<< HEAD
                     echo "🚀 Starting Jenkins Pipeline"
                     echo "Inventory: ${params.inventory}"
                     echo "Tags: ${params.tags}"
                     echo "Workspace: ${WORKSPACE}"
                     
+=======
+>>>>>>> 5dda3d63fd3631086b13a9716a47d0d322c1ab5b
                     sh '''
                     echo "=== Environment Setup ==="
                     echo "Python: $(python3 --version)"
@@ -52,6 +60,7 @@ pipeline {
 
         stage('Run Ansible Playbook') {
             steps {
+<<<<<<< HEAD
                 script {
                     echo "🎯 Running Ansible Playbook"
                     
@@ -75,11 +84,33 @@ pipeline {
                     ansible-playbook -i ${params.inventory} site.yml --tags "${params.tags}" -v
                     """
                 }
+=======
+                sh '''
+                echo "=== Running Ansible Playbook ==="
+                echo "Current directory: $(pwd)"
+                echo "Inventory file: ${inventory}"
+                
+                # Test if inventory file exists
+                if [ -f "${inventory}" ]; then
+                    echo "Inventory file content:"
+                    cat "${inventory}"
+                else
+                    echo "ERROR: Inventory file ${inventory} not found!"
+                    exit 1
+                fi
+                
+                # Run Ansible
+                echo ""
+                echo "Running ansible-playbook..."
+                ansible-playbook -i ${inventory} site.yml --tags "${tags}" -v
+                '''
+>>>>>>> 5dda3d63fd3631086b13a9716a47d0d322c1ab5b
             }
         }
 
         stage('Verify Results') {
             steps {
+<<<<<<< HEAD
                 script {
                     echo "✅ Verification Stage"
                     
@@ -100,6 +131,14 @@ pipeline {
                     ls -la /tmp/*ansible* 2>/dev/null || echo "No ansible files found"
                     '''
                 }
+=======
+                echo "✅ Deployment to ${params.inventory} completed successfully!"
+                sh '''
+                echo "=== Verification ==="
+                date
+                echo "All tasks completed!"
+                '''
+>>>>>>> 5dda3d63fd3631086b13a9716a47d0d322c1ab5b
             }
         }
     }
@@ -107,8 +146,13 @@ pipeline {
     post {
         always {
             echo "📊 Pipeline ${currentBuild.currentResult}"
+<<<<<<< HEAD
             echo "⏰ Build: ${currentBuild.fullDisplayName}"
             echo "📁 Workspace: ${WORKSPACE}"
+=======
+            echo "Inventory: ${params.inventory}"
+            echo "Tags: ${params.tags}"
+>>>>>>> 5dda3d63fd3631086b13a9716a47d0d322c1ab5b
         }
         success {
             echo "🎉 SUCCESS! Pipeline completed successfully!"
