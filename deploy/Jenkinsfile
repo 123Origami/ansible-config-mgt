@@ -2,17 +2,21 @@ pipeline {
     agent any
 
     parameters {
-        choice(
+        string(
             name: 'inventory',
-            choices: ['dev', 'sit', 'uat', 'pentest', 'pre-prod', 'prod'],
-            description: 'Select environment to deploy to',
-            defaultValue: 'dev'
+            defaultValue: 'dev',
+            description: 'This is the inventory file for the environment to deploy configuration'
         )
         string(
             name: 'tags',
             defaultValue: 'all',
             description: 'Ansible tags to run (comma separated)'
         )
+    }
+
+    environment {
+        ANSIBLE_CONFIG = "${WORKSPACE}/deploy/.ansible.cfg"
+        INVENTORY_FILE = "${params.inventory}"
     }
 
     stages {
@@ -31,41 +35,56 @@ pipeline {
 
         stage('Setup Environment') {
             steps {
-                echo "Starting deployment to ${params.inventory}"
-                sh '''
-                echo "Working directory: \$(pwd)"
-                echo "Inventory: \${inventory}"
-                echo "Tags: \${tags}"
-                echo ""
-                echo "=== Checking files ==="
-                ls -la
-                '''
+                script {
+                    // Update ansible.cfg with dynamic roles_path
+                    sh '''
+                    echo "=== Setting up environment ==="
+                    echo "Inventory: ${inventory}"
+                    echo "Tags: ${tags}"
+                    echo "ANSIBLE_CONFIG: ${ANSIBLE_CONFIG}"
+                    
+                    # Update ansible.cfg with current workspace
+                    sed -i "s|\\\$WORKSPACE|${WORKSPACE}|g" deploy/.ansible.cfg
+                    sed -i "s|\\\$INVENTORY_FILE|${inventory}|g" deploy/.ansible.cfg
+                    
+                    echo "=== Updated .ansible.cfg ==="
+                    cat deploy/.ansible.cfg
+                    '''
+                }
             }
         }
 
-        stage('Run Ansible') {
+        stage('Run Ansible Playbook') {
             steps {
                 sh '''
-                echo "=== Running Ansible ==="
-                ansible --version
-                echo ""
-                echo "=== Testing connectivity ==="
-                if [ -f "\${inventory}" ]; then
-                    ansible all -i \${inventory} -m ping -u ubuntu || echo "Ping test failed"
+                echo "=== Running Ansible Playbook ==="
+                echo "Current directory: $(pwd)"
+                echo "Inventory file: ${inventory}"
+                
+                # Test if inventory file exists
+                if [ -f "${inventory}" ]; then
+                    echo "Inventory file content:"
+                    cat "${inventory}"
                 else
-                    echo "Inventory file \${inventory} not found"
+                    echo "ERROR: Inventory file ${inventory} not found!"
+                    exit 1
                 fi
+                
+                # Run Ansible
+                echo ""
+                echo "Running ansible-playbook..."
+                ansible-playbook -i ${inventory} site.yml --tags "${tags}" -v
                 '''
             }
         }
 
         stage('Verify Deployment') {
             steps {
-                echo "Deployment to \${params.inventory} completed!"
+                echo "✅ Deployment to ${params.inventory} completed successfully!"
                 sh '''
                 echo "=== Verification ==="
                 date
-                echo "Deployment successful!"
+                echo "All tasks completed!"
                 '''
             }
         }
@@ -73,13 +92,15 @@ pipeline {
 
     post {
         always {
-            echo "Pipeline \${currentBuild.currentResult}"
+            echo "📊 Pipeline ${currentBuild.currentResult}"
+            echo "Inventory: ${params.inventory}"
+            echo "Tags: ${params.tags}"
         }
         success {
-            echo "SUCCESS! All stages passed!"
+            echo "🎉 SUCCESS! Ansible deployment completed!"
         }
         failure {
-            echo "FAILURE! Check logs above."
+            echo "❌ FAILURE! Check Ansible logs above."
         }
     }
 }
