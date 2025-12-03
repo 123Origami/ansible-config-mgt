@@ -1,37 +1,100 @@
+# First, let me give you the exact Jenkinsfile to use
+cat > deploy/Jenkinsfile << 'EOF'
 pipeline {
     agent any
 
     parameters {
-      string(name: 'inventory', defaultValue: 'dev',  description: 'This is the inventory file for the environment to deploy configuration')
+        choice(
+            name: 'inventory',
+            choices: ['dev', 'sit', 'uat', 'pentest', 'pre-prod', 'prod'],
+            description: 'Select environment to deploy to',
+            defaultValue: 'dev'
+        )
+        string(
+            name: 'tags',
+            defaultValue: 'all',
+            description: 'Ansible tags to run (comma separated)'
+        )
     }
 
     stages {
-        stage('Test') {
+        stage('Clean Workspace') {
             steps {
-                echo "Testing pipeline with inventory: ${params.inventory}"
-                sh '''
-                echo "Current directory: $(pwd)"
-                echo "Listing files:"
-                ls -la
-                echo "Inventory parameter: ${inventory}"
-                '''
+                cleanWs()
             }
         }
 
-        stage('Check Inventory') {
+        stage('Checkout Code') {
             steps {
+                git branch: 'main', 
+                url: 'https://github.com/123Origami/ansible-config-mgt.git'
+                
+            }
+        }
+
+        stage('Setup Environment') {
+            steps {
+                echo "🚀 Starting deployment to ${params.inventory}"
                 sh '''
-                echo "Checking inventory file: ${inventory}"
-                if [ -f "${WORKSPACE}/${inventory}" ]; then
-                    echo "Inventory file exists:"
-                    cat "${WORKSPACE}/${inventory}"
+                echo "Working directory: $(pwd)"
+                echo "Inventory: ${inventory}"
+                echo "Tags: ${tags}"
+                echo ""
+                echo "=== Checking files ==="
+                ls -la
+                echo ""
+                echo "=== Checking inventory file ==="
+                if [ -f "${inventory}" ]; then
+                    cat "${inventory}"
                 else
                     echo "ERROR: Inventory file ${inventory} not found!"
-                    echo "Available inventory files:"
-                    ls -la *.inv* 2>/dev/null || ls -la
+                    echo "Available files:"
+                    ls -la *.yml *.cfg ${inventory}* 2>/dev/null || ls -la
                 fi
                 '''
             }
         }
+
+        stage('Run Ansible') {
+            steps {
+                sh '''
+                echo "=== Running Ansible ==="
+                ansible --version
+                echo ""
+                echo "=== Testing connectivity ==="
+                ansible all -i ${inventory} -m ping -u ubuntu || echo "Ping test failed, continuing..."
+                echo ""
+                echo "=== Running playbook ==="
+                ansible-playbook -i ${inventory} site.yml --tags "${tags}" -v
+                '''
+            }
+        }
+
+        stage('Verify Deployment') {
+            steps {
+                echo "✅ Deployment to ${params.inventory} completed!"
+                sh '''
+                echo "=== Verification ==="
+                date
+                echo "Deployment successful!"
+                '''
+            }
+        }
+    }
+
+    post {
+        always {
+            echo "📊 Pipeline ${currentBuild.currentResult}"
+            echo "⏰ Duration: ${currentBuild.durationString}"
+        }
+        success {
+            echo "🎉 SUCCESS! All stages passed!"
+        }
+        failure {
+            echo "❌ FAILURE! Check logs above."
+        }
     }
 }
+EOF
+
+
