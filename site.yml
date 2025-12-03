@@ -1,60 +1,105 @@
 ---
-- name: Deploy Web Servers
+- name: Local Development Environment Setup
+  hosts: local
+  connection: local
+  become: no  # No sudo needed for local
+  gather_facts: yes
+  tags: local-setup
+  
+  tasks:
+    - name: Print environment info
+      debug:
+        msg: |
+          Testing Ansible from Jenkins
+          Host: {{ inventory_hostname }}
+          User: {{ ansible_user_id }}
+          Time: {{ ansible_date_time.time }}
+          Workspace: {{ lookup('env', 'WORKSPACE') }}
+
+    - name: Create test directory
+      file:
+        path: /tmp/jenkins-test-{{ ansible_date_time.date }}
+        state: directory
+        mode: '0755'
+    
+    - name: Create test file
+      copy:
+        content: |
+          This file was created by Ansible via Jenkins
+          Pipeline: {{ lookup('env', 'JOB_NAME') }}
+          Build: {{ lookup('env', 'BUILD_NUMBER') }}
+          Time: {{ ansible_date_time.time }}
+        dest: /tmp/jenkins-test-{{ ansible_date_time.date }}/success.txt
+    
+    - name: Show created file
+      command: cat /tmp/jenkins-test-{{ ansible_date_time.date }}/success.txt
+      register: file_content
+    
+    - name: Display file content
+      debug:
+        msg: "{{ file_content.stdout_lines }}"
+
+- name: Simulate Web Server Deployment
   hosts: webservers
-  become: yes
-  tags: webserver
+  connection: local
+  become: no
+  tags: webserver-sim
   
   tasks:
-    - name: Install Apache
-      apt:
-        name: apache2
-        state: present
-      tags: apache
+    - name: Simulate Apache installation
+      debug:
+        msg: "Simulating Apache installation on {{ inventory_hostname }}"
     
-    - name: Start Apache
-      service:
-        name: apache2
-        state: started
-        enabled: yes
-      tags: apache
+    - name: Create simulated web content
+      copy:
+        content: |
+          <html>
+          <body>
+          <h1>Simulated Web Server</h1>
+          <p>Deployed via Jenkins Pipeline</p>
+          <p>Time: {{ ansible_date_time.time }}</p>
+          </body>
+          </html>
+        dest: /tmp/simulated-web/index.html
+      delegate_to: localhost
 
-- name: Deploy Nginx
+- name: Simulate Nginx Deployment
   hosts: nginx
-  become: yes
-  tags: nginx
+  connection: local
+  become: no
+  tags: nginx-sim
   
   tasks:
-    - name: Install Nginx
-      apt:
-        name: nginx
-        state: present
-      tags: nginx
+    - name: Simulate Nginx installation
+      debug:
+        msg: "Simulating Nginx installation on {{ inventory_hostname }}"
     
-    - name: Start Nginx
-      service:
-        name: nginx
-        state: started
-        enabled: yes
-      tags: nginx
+    - name: Create simulated nginx config
+      copy:
+        content: |
+          # Simulated Nginx configuration
+          server {
+              listen 8080;
+              server_name localhost;
+              location / {
+                  return 200 "Nginx simulation successful";
+              }
+          }
+        dest: /tmp/simulated-nginx/nginx.conf
+      delegate_to: localhost
 
-- name: Common Tasks for All Servers
+- name: Final Verification
   hosts: all
-  become: yes
-  tags: common
+  connection: local
+  become: no
+  tags: verify
   
   tasks:
-    - name: Update apt cache
-      apt:
-        update_cache: yes
-        cache_valid_time: 3600
-      tags: update
+    - name: Create success flag
+      copy:
+        content: "SUCCESS: Ansible deployment simulation completed at {{ ansible_date_time.time }}"
+        dest: /tmp/ansible-jenkins-success.txt
     
-    - name: Install common packages
-      apt:
-        name: "{{ item }}"
-        state: present
-      loop:
-        - curl
-        - wget
-        - git
-      tags: packages
+    - name: Show success message
+      debug:
+        msg: "✅ SUCCESS! Pipeline completed. All tasks simulated successfully."

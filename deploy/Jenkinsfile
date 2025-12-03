@@ -2,26 +2,20 @@ pipeline {
     agent any
 
     parameters {
-        string(
+        choice(
             name: 'inventory',
-<<<<<<< HEAD
-            defaultValue: 'dev',
-            description: 'This is the inventory file for the environment to deploy configuration'
-=======
-            choices: ['dev', 'sit', 'uat', 'pentest', 'pre-prod', 'prod'],
-            description: 'Select environment to deploy to'
->>>>>>> 8b59d6d63d939c3997797bfcc612ea71c182cc75
+            choices: ['local-test', 'dev', 'sit', 'uat', 'pentest', 'pre-prod', 'prod'],
+            description: 'Select inventory file'
         )
-        string(
+        choice(
             name: 'tags',
-            defaultValue: 'all',
-            description: 'Ansible tags to run (comma separated)'
+            choices: ['all', 'local-setup', 'webserver-sim', 'nginx-sim', 'verify'],
+            description: 'Select tags to run'
         )
     }
 
     environment {
         ANSIBLE_CONFIG = "${WORKSPACE}/deploy/.ansible.cfg"
-        INVENTORY_FILE = "${params.inventory}"
     }
 
     stages {
@@ -40,103 +34,98 @@ pipeline {
 
         stage('Setup Environment') {
             steps {
-<<<<<<< HEAD
                 script {
-                    // Update ansible.cfg with dynamic roles_path
+                    echo "🚀 Starting Jenkins Pipeline"
+                    echo "Inventory: ${params.inventory}"
+                    echo "Tags: ${params.tags}"
+                    echo "Workspace: ${WORKSPACE}"
+                    
                     sh '''
-                    echo "=== Setting up environment ==="
-                    echo "Inventory: ${inventory}"
-                    echo "Tags: ${tags}"
-                    echo "ANSIBLE_CONFIG: ${ANSIBLE_CONFIG}"
-                    
-                    # Update ansible.cfg with current workspace
-                    sed -i "s|\\\$WORKSPACE|${WORKSPACE}|g" deploy/.ansible.cfg
-                    sed -i "s|\\\$INVENTORY_FILE|${inventory}|g" deploy/.ansible.cfg
-                    
-                    echo "=== Updated .ansible.cfg ==="
-                    cat deploy/.ansible.cfg
+                    echo "=== Environment Setup ==="
+                    echo "Python: $(python3 --version)"
+                    echo "Ansible: $(ansible --version | head -1)"
+                    echo "Current user: $(whoami)"
                     '''
                 }
-=======
-                echo "Starting deployment to ${params.inventory}"
-                sh '''
-                echo "Working directory: $(pwd)"
-                echo "Inventory: ${inventory}"
-                echo "Tags: ${tags}"
-                echo ""
-                echo "=== Checking files ==="
-                ls -la
-                '''
->>>>>>> 8b59d6d63d939c3997797bfcc612ea71c182cc75
             }
         }
 
         stage('Run Ansible Playbook') {
             steps {
-                sh '''
-<<<<<<< HEAD
-                echo "=== Running Ansible Playbook ==="
-                echo "Current directory: $(pwd)"
-                echo "Inventory file: ${inventory}"
-                
-                # Test if inventory file exists
-                if [ -f "${inventory}" ]; then
-                    echo "Inventory file content:"
-                    cat "${inventory}"
-                else
-                    echo "ERROR: Inventory file ${inventory} not found!"
-                    exit 1
-=======
-                echo "=== Running Ansible ==="
-                ansible --version
-                echo ""
-                echo "=== Testing connectivity ==="
-                if [ -f "${inventory}" ]; then
-                    ansible all -i ${inventory} -m ping -u ubuntu || echo "Ping test failed"
-                else
-                    echo "Inventory file ${inventory} not found"
->>>>>>> 8b59d6d63d939c3997797bfcc612ea71c182cc75
-                fi
-                
-                # Run Ansible
-                echo ""
-                echo "Running ansible-playbook..."
-                ansible-playbook -i ${inventory} site.yml --tags "${tags}" -v
-                '''
+                script {
+                    echo "🎯 Running Ansible Playbook"
+                    
+                    sh """
+                    echo "=== Inventory Check ==="
+                    if [ -f "${params.inventory}" ]; then
+                        echo "Using inventory: ${params.inventory}"
+                        echo "First few lines:"
+                        head -20 "${params.inventory}"
+                    else
+                        echo "WARNING: Inventory file ${params.inventory} not found!"
+                        echo "Using local-test instead"
+                        INVENTORY_FILE="local-test"
+                    fi
+                    
+                    echo ""
+                    echo "=== Running Ansible ==="
+                    echo "Command: ansible-playbook -i ${params.inventory} site.yml --tags \"${params.tags}\""
+                    
+                    # Run ansible-playbook
+                    ansible-playbook -i ${params.inventory} site.yml --tags "${params.tags}" -v
+                    """
+                }
             }
         }
 
-        stage('Verify Deployment') {
+        stage('Verify Results') {
             steps {
-<<<<<<< HEAD
-                echo "✅ Deployment to ${params.inventory} completed successfully!"
-=======
-                echo "Deployment to ${params.inventory} completed!"
->>>>>>> 8b59d6d63d939c3997797bfcc612ea71c182cc75
-                sh '''
-                echo "=== Verification ==="
-                date
-                echo "All tasks completed!"
-                '''
+                script {
+                    echo "✅ Verification Stage"
+                    
+                    sh '''
+                    echo "=== Checking Results ==="
+                    echo "Looking for success files..."
+                    
+                    # Check for success files
+                    if [ -f "/tmp/ansible-jenkins-success.txt" ]; then
+                        echo "Success file found:"
+                        cat /tmp/ansible-jenkins-success.txt
+                    fi
+                    
+                    # List recent test files
+                    echo ""
+                    echo "Recent test files in /tmp:"
+                    ls -la /tmp/jenkins-test-* 2>/dev/null || echo "No test files found"
+                    ls -la /tmp/*ansible* 2>/dev/null || echo "No ansible files found"
+                    '''
+                }
             }
         }
     }
 
     post {
         always {
-<<<<<<< HEAD
             echo "📊 Pipeline ${currentBuild.currentResult}"
-            echo "Inventory: ${params.inventory}"
-            echo "Tags: ${params.tags}"
-=======
-            echo "Pipeline ${currentBuild.currentResult}"
->>>>>>> 8b59d6d63d939c3997797bfcc612ea71c182cc75
+            echo "⏰ Build: ${currentBuild.fullDisplayName}"
+            echo "📁 Workspace: ${WORKSPACE}"
         }
         success {
-            echo "🎉 SUCCESS! Ansible deployment completed!"
+            echo "🎉 SUCCESS! Pipeline completed successfully!"
+            echo "✅ Ansible simulation worked perfectly!"
+            
+            sh '''
+            echo "=== Success Summary ==="
+            echo "1. Jenkinsfile syntax: ✓"
+            echo "2. Git checkout: ✓"
+            echo "3. Ansible execution: ✓"
+            echo "4. Local simulation: ✓"
+            date
+            '''
         }
         failure {
-            echo "❌ FAILURE! Check Ansible logs above."
+            echo "❌ FAILURE! Check logs above."
+            echo "💡 Tip: Make sure ansible is installed on Jenkins server"
         }
     }
 }

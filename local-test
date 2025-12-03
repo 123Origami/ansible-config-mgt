@@ -1,0 +1,23 @@
+# Local testing inventory - all on localhost
+[local]
+localhost ansible_connection=local
+
+# For testing playbook groups
+[webservers]
+localhost ansible_connection=local
+
+[nginx]
+localhost ansible_connection=local
+
+[database]
+localhost ansible_connection=local
+
+[tooling]
+localhost ansible_connection=local
+
+[todo]
+localhost ansible_connection=local
+
+[all:vars]
+ansible_python_interpreter=/usr/bin/python3
+test_environment=true
