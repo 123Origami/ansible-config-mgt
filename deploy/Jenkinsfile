@@ -4,13 +4,8 @@ pipeline {
     parameters {
         string(
             name: 'inventory',
-<<<<<<< HEAD
             defaultValue: 'dev',
             description: 'This is the inventory file for the environment to deploy configuration'
-=======
-            choices: ['dev', 'sit', 'uat', 'pentest', 'pre-prod', 'prod'],
-            description: 'Select environment to deploy to'
->>>>>>> 8b59d6d63d939c3997797bfcc612ea71c182cc75
         )
         string(
             name: 'tags',
@@ -40,9 +35,7 @@ pipeline {
 
         stage('Setup Environment') {
             steps {
-<<<<<<< HEAD
                 script {
-                    // Update ansible.cfg with dynamic roles_path
                     sh '''
                     echo "=== Setting up environment ==="
                     echo "Inventory: ${inventory}"
@@ -57,24 +50,12 @@ pipeline {
                     cat deploy/.ansible.cfg
                     '''
                 }
-=======
-                echo "Starting deployment to ${params.inventory}"
-                sh '''
-                echo "Working directory: $(pwd)"
-                echo "Inventory: ${inventory}"
-                echo "Tags: ${tags}"
-                echo ""
-                echo "=== Checking files ==="
-                ls -la
-                '''
->>>>>>> 8b59d6d63d939c3997797bfcc612ea71c182cc75
             }
         }
 
         stage('Run Ansible Playbook') {
             steps {
                 sh '''
-<<<<<<< HEAD
                 echo "=== Running Ansible Playbook ==="
                 echo "Current directory: $(pwd)"
                 echo "Inventory file: ${inventory}"
@@ -86,16 +67,6 @@ pipeline {
                 else
                     echo "ERROR: Inventory file ${inventory} not found!"
                     exit 1
-=======
-                echo "=== Running Ansible ==="
-                ansible --version
-                echo ""
-                echo "=== Testing connectivity ==="
-                if [ -f "${inventory}" ]; then
-                    ansible all -i ${inventory} -m ping -u ubuntu || echo "Ping test failed"
-                else
-                    echo "Inventory file ${inventory} not found"
->>>>>>> 8b59d6d63d939c3997797bfcc612ea71c182cc75
                 fi
                 
                 # Run Ansible
@@ -108,11 +79,7 @@ pipeline {
 
         stage('Verify Deployment') {
             steps {
-<<<<<<< HEAD
                 echo "✅ Deployment to ${params.inventory} completed successfully!"
-=======
-                echo "Deployment to ${params.inventory} completed!"
->>>>>>> 8b59d6d63d939c3997797bfcc612ea71c182cc75
                 sh '''
                 echo "=== Verification ==="
                 date
@@ -124,13 +91,9 @@ pipeline {
 
     post {
         always {
-<<<<<<< HEAD
             echo "📊 Pipeline ${currentBuild.currentResult}"
             echo "Inventory: ${params.inventory}"
             echo "Tags: ${params.tags}"
-=======
-            echo "Pipeline ${currentBuild.currentResult}"
->>>>>>> 8b59d6d63d939c3997797bfcc612ea71c182cc75
         }
         success {
             echo "🎉 SUCCESS! Ansible deployment completed!"
