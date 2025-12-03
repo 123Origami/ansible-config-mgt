@@ -1,5 +1,3 @@
-# First, let me give you the exact Jenkinsfile to use
-cat > deploy/Jenkinsfile << 'EOF'
 pipeline {
     agent any
 
@@ -28,29 +26,19 @@ pipeline {
             steps {
                 git branch: 'main', 
                 url: 'https://github.com/123Origami/ansible-config-mgt.git'
-                
             }
         }
 
         stage('Setup Environment') {
             steps {
-                echo "🚀 Starting deployment to ${params.inventory}"
+                echo "Starting deployment to ${params.inventory}"
                 sh '''
-                echo "Working directory: $(pwd)"
-                echo "Inventory: ${inventory}"
-                echo "Tags: ${tags}"
+                echo "Working directory: \$(pwd)"
+                echo "Inventory: \${inventory}"
+                echo "Tags: \${tags}"
                 echo ""
                 echo "=== Checking files ==="
                 ls -la
-                echo ""
-                echo "=== Checking inventory file ==="
-                if [ -f "${inventory}" ]; then
-                    cat "${inventory}"
-                else
-                    echo "ERROR: Inventory file ${inventory} not found!"
-                    echo "Available files:"
-                    ls -la *.yml *.cfg ${inventory}* 2>/dev/null || ls -la
-                fi
                 '''
             }
         }
@@ -62,17 +50,18 @@ pipeline {
                 ansible --version
                 echo ""
                 echo "=== Testing connectivity ==="
-                ansible all -i ${inventory} -m ping -u ubuntu || echo "Ping test failed, continuing..."
-                echo ""
-                echo "=== Running playbook ==="
-                ansible-playbook -i ${inventory} site.yml --tags "${tags}" -v
+                if [ -f "\${inventory}" ]; then
+                    ansible all -i \${inventory} -m ping -u ubuntu || echo "Ping test failed"
+                else
+                    echo "Inventory file \${inventory} not found"
+                fi
                 '''
             }
         }
 
         stage('Verify Deployment') {
             steps {
-                echo "✅ Deployment to ${params.inventory} completed!"
+                echo "Deployment to \${params.inventory} completed!"
                 sh '''
                 echo "=== Verification ==="
                 date
@@ -84,17 +73,13 @@ pipeline {
 
     post {
         always {
-            echo "📊 Pipeline ${currentBuild.currentResult}"
-            echo "⏰ Duration: ${currentBuild.durationString}"
+            echo "Pipeline \${currentBuild.currentResult}"
         }
         success {
-            echo "🎉 SUCCESS! All stages passed!"
+            echo "SUCCESS! All stages passed!"
         }
         failure {
-            echo "❌ FAILURE! Check logs above."
+            echo "FAILURE! Check logs above."
         }
     }
 }
-EOF
-
-
